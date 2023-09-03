@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset=”utf-8″>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
+  <title>Fall of Yum Progress Tracker</title>
+  <style>
+    .col-4 {
+      width: 30%;
+    }
+    .trophy-icon {
+
+    }
+  </style>
+</head>
+<body>
+  {% for title in titles %}
+    {% if loop.index0 % 3 == 0 %}
+      <div class="row justify-content-center my-4">
+    {% endif %}
+        <div class="col-4 card mx-3">
+          <img src="{{title[0].title_icon_url}}">
+          <h5>
+            <a href="{{title[1]}}" target="_blank">{{title[0].title_name}}</a>
+            &nbsp;(
+            {% if title[2] == 0 %}
+              <span class="text-success">Completed</span>
+            {% endif %}
+            {% if title[2] > 0 %}
+              <span class="text-danger">{{title[2]}} Trophies Left</span>
+            {% endif %}
+            )
+          </h5>
+          <div>
+            <h6>Fall of Yum Trophies Earned ({{title[3]|length}}):</h6>
+            {% for trophy in title[3] %}
+              <div class="m-2">
+                <img src="{{trophy.trophy_icon_url}}" height="70">
+                {{trophy.trophy_name}} ({{format_time(trophy.earned_date_time)}})
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+    {% if loop.index0 %3 == 2 or loop.index0 == ((titles|length) - 1)%}
+      </div>
+    {% endif %}
+  {% endfor %}
+
+  <div class="row justify-content-center">
+    <div class="col-6">
+      <h4>Fall of Yum Trophies Earned ({{trophies|length}} Total)</h4>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Game</th>
+            <th>Trophy</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for trophy in trophies %}
+          <tr>
+            <td><a href="{{trophy[2]}}" target="_blank">{{trophy[1]}}</a></td>
+            <td>{{trophy[0].trophy_name}}</td>
+            <td>{{format_time(trophy[0].earned_date_time)}}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm" crossorigin="anonymous"></script>
+</body>
+</html>

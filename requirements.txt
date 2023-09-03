@@ -1,2 +1,5 @@
 flask
 PSNAWP
+tzdata
+jinja2
+gunicorn
