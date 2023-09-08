@@ -1,5 +1,6 @@
-import time
+import logging
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, render_template
 from typing import Dict, List, Tuple, Literal
 
@@ -12,6 +13,7 @@ from psnawp_api.models.user import User
 import datetime
 from zoneinfo import ZoneInfo
 
+from profileinfo import ProfileInfo
 from titleinfo import TitleInfo
 from trophyinfo import TrophyInfo
 
@@ -30,6 +32,8 @@ titles_to_look_for: Dict[str, Tuple[str, Literal["PS Vita", "PS3", "PS4", "PS5"]
     'NPWR17582_00': ("9594-catherine-full-body", "PS4"),
     'NPWR25297_00': ("16773-fall-guys-ultimate-knockout", "PS5")
 }
+
+yum_profile = ProfileInfo([], [], [], 0)
 
 app = Flask(__name__)
 
@@ -53,27 +57,14 @@ def utility_processor():
 
 @app.route("/")
 def home():
-    res: Tuple[List[TitleInfo], List[TrophyInfo]] = get_titles()
-    titles: List[TitleInfo] = res[0]
-
-    # Sort complete by completion date
-    complete_titles: List[TitleInfo] = [t for t in titles if t.trophies_left == 0]
-    complete_titles.sort(key=lambda x: x.fall_trophies[0].earned_date_time)
-
-    # Sort incomplete by number of trophies left
-    incomplete_titles: List[TitleInfo] = [t for t in titles if t.trophies_left > 0]
-    incomplete_titles.sort(key=lambda x: x.trophies_left)  # sort by trophies left
-
-    grouped_trophies = grouped_fall_trophies(res[1])
-
     return render_template("status.html",
-                           complete_titles=complete_titles,
-                           incomplete_titles=incomplete_titles,
-                           trophies=grouped_trophies[0],
-                           trophy_count=grouped_trophies[1])
+                           complete_titles=yum_profile.complete_titles,
+                           incomplete_titles=yum_profile.incomplete_titles,
+                           trophies=yum_profile.trophies,
+                           trophy_count=yum_profile.trophy_count)
 
 
-def grouped_fall_trophies(trophies: List[TrophyInfo]) -> List[Tuple[datetime.date, List[TrophyInfo], str]]:
+def grouped_fall_trophies(trophies: List[TrophyInfo]) -> Tuple[List[Tuple[datetime.date, List[TrophyInfo], str]], int]:
     table_colors: List[str] = ['table-primary', "table-info", 'table-success',
                                "table-warning", "table-secondary", "table-light"]
 
@@ -129,3 +120,33 @@ def get_complete_title(yummus: User, title: TrophyTitle) -> TitleInfo:
 
     title_psn_link: str = f"https://psnprofiles.com/trophies/{titles_to_look_for[title.np_communication_id][0]}/yummus_?order=psn-rarity&trophies=unearned"
     return TitleInfo(title, title_psn_link, len(trophies_left), fall_trophies)
+
+
+def update_info():
+    print("Getting latest Yummus info")
+    res: Tuple[List[TitleInfo], List[TrophyInfo]] = get_titles()
+    titles: List[TitleInfo] = res[0]
+
+    # Sort complete by completion date
+    complete_titles = [t for t in titles if t.trophies_left == 0]
+    complete_titles.sort(key=lambda x: x.fall_trophies[0].earned_date_time)
+
+    # Sort incomplete by number of trophies left
+    incomplete_titles = [t for t in titles if t.trophies_left > 0]
+    incomplete_titles.sort(key=lambda x: x.trophies_left)  # sort by trophies left
+
+    # Get overall trophy list
+    grouped_trophies = grouped_fall_trophies(res[1])
+    yum_profile.complete_titles = complete_titles
+    yum_profile.incomplete_titles = incomplete_titles
+    yum_profile.trophies = grouped_trophies[0]
+    yum_profile.trophy_count = grouped_trophies[1]
+    print("Done updating latest Yummus info")
+
+
+# Set the info
+update_info()
+# Set backgroun task to run every minute
+scheduler = BackgroundScheduler()
+scheduler.add_job(update_info, trigger="interval", seconds=60)
+scheduler.start()
