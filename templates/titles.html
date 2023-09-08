@@ -1,0 +1,31 @@
+  {% for title_info in titles_to_display %}
+    {% if loop.index0 % 2 == 0 %}
+      <div class="row justify-content-center my-4">
+    {% endif %}
+        <div class="col-5 card mx-5 {{title_info.card_css()}}">
+          <img class="rounded mx-auto d-block" src="{{title_info.title_icon_url}}" width="400">
+          <h5>
+            <a href="{{title_info.title_psn_link}}" target="_blank">{{title_info.title_name}}</a>
+            &nbsp;(<span class="{{title_info.status_css()}}">{{title_info.status()}}</span>)
+          </h5>
+          <div>
+            <h6 class="fw-bolder">Fall of Yum Trophies Earned ({{title_info.fall_trophies|length}}):</h6>
+            {% for date, trophies in title_info.grouped_trophies() %}
+              <h6 class="m-2 fw-bold">{{format_date(date)}}</h6>
+              {% for trophy in trophies %}
+                <div class="m-3">
+                  <img src="{{trophy.trophy_icon_url}}" height="70">
+                  {{trophy.trophy_name}} ({{format_time(trophy.earned_date_time)}})
+                  {% if is_plat(trophy) %}
+                  <img src="https://assets.help.twitch.tv/article/img/moments-badges/tier-04.png" height="50">
+                  {% endif %}
+                </div>
+              {% endfor %}
+            {% endfor %}
+
+          </div>
+        </div>
+    {% if loop.index0 %2 == 1 or loop.index0 == ((titles_to_display|length) - 1)%}
+      </div>
+    {% endif %}
+  {% endfor %}
